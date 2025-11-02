@@ -1,0 +1,12 @@
+[project]
+name = "swsn"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=7.1.0",
+    "matplotlib>=3.10.7",
+    "pandas>=2.3.3",
+    "pyarrow>=21.0.0",
+]
