@@ -5,6 +5,10 @@ build/
 dist/
 wheels/
 *.egg-info
+.vscode
 
 # Virtual environments
 .venv
+
+# Project
+SemEval-2026-Task13
