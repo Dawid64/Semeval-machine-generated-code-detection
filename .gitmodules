@@ -1,0 +1,3 @@
+[submodule "SemEval-2026-Task13"]
+	path = SemEval-2026-Task13
+	url = https://github.com/mbzuai-nlp/SemEval-2026-Task13.git
