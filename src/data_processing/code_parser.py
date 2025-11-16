@@ -123,7 +123,7 @@ def parse_data_frame(data: pd.DataFrame) -> list[Data]:
 
 
 if __name__ == "__main__":
-    from .utils import load_data
+    from .data_loading import load_data
 
     new_data = load_data("b", "train").sample(1)
     print(parse_data_frame(new_data)[0])

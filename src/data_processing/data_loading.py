@@ -26,7 +26,9 @@ def load_data(
     elif Path("..", "data").exists():
         path = Path("..", "data", "SemEval-2026-Task13")
     else:
-        raise FileNotFoundError("Dataset not found")
+        raise FileNotFoundError(
+            "Dataset not found, to download use `python -m src.data_processing.data_loading`"
+        )
     dir_paths = {name: path / f"task_{name}" for name in ["a", "b", "c"]}
     datasets = {
         name: {
