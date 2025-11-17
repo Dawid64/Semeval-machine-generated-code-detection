@@ -103,15 +103,15 @@ def create_graph(code: str, language: SUPPORTED_LANGUAGES) -> Data:
     return Data(
         x=torch.stack(
             [
-                torch.tensor(info["type_id"], dtype=torch.long),
-                torch.tensor(info["depth"], dtype=torch.long),
-                torch.tensor(info["num_children"], dtype=torch.long),
-                torch.tensor(info["is_named"], dtype=torch.long),
-                torch.tensor(info["length"], dtype=torch.long),
+                torch.tensor(info["type_id"], dtype=torch.float32),
+                torch.tensor(info["depth"], dtype=torch.float32),
+                torch.tensor(info["num_children"], dtype=torch.float32),
+                torch.tensor(info["is_named"], dtype=torch.float32),
+                torch.tensor(info["length"], dtype=torch.float32),
             ],
             dim=-1,
         ),
-        edge_index=torch.tensor(edges, dtype=torch.long),
+        edge_index=torch.tensor(edges, dtype=torch.long).t(),
     )
 
 
