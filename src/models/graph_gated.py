@@ -19,7 +19,8 @@ class GraphClassifier(nn.Module):
 
         in_gnn = embed_dim + in_channels - 1
 
-        self.c1 = GatedGraphConv(in_gnn, 1024)
+        self.c1 = GatedGraphConv(2048, 1)
+        self.c2 = GatedGraphConv(1024, 1)
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 512)
         self.o = nn.Linear(512, num_classes)
@@ -43,6 +44,9 @@ class GraphClassifier(nn.Module):
         x = self.c1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.c2(x, edge_index)
+        x = F.relu(x)
 
         x = global_mean_pool(x, batch)
         x = F.relu(self.h1(x))
