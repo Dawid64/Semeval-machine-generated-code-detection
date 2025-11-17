@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.nn import GCNConv,GatedGraphConv, global_mean_pool
 
 
 class GraphClassifier(nn.Module):
@@ -11,6 +11,7 @@ class GraphClassifier(nn.Module):
         num_classes: int,
         num_node_types: int,
         embed_dim: int = 32,
+        gated:bool=False,
     ):
         super().__init__()
 
@@ -20,8 +21,8 @@ class GraphClassifier(nn.Module):
 
         in_gnn = embed_dim + in_channels - 1
 
-        self.c1 = GCNConv(in_gnn, 2048)
-        self.c2 = GCNConv(2048, 1024)
+        self.c1 = GatedGraphConv(in_gnn, 2048) if gated else GCNConv(in_gnn, 2048)
+        self.c2 = GatedGraphConv(2048, 1024) if gated else GCNConv(2048, 1024)
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 512)
         self.o = nn.Linear(512, num_classes)
@@ -59,5 +60,5 @@ class GraphClassifier(nn.Module):
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphClassifier(5, 2, 65536))
+    trainer = Trainer(GraphClassifier(5, 2, 65536, gated=True))
     trainer.train()
