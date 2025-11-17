@@ -24,7 +24,7 @@ class Trainer:
         self.dataset_part = dataset_part
         self.training_dataset = self.prepare_dataset(load_data(dataset_name, "train"))
         self.validation_dataset = self.prepare_dataset(load_data(dataset_name, "val"))
-        self.device = "cpu" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.model = model.to(self.device)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
