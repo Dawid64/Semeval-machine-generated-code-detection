@@ -5,6 +5,7 @@ from src.data_processing import load_data, parse_data_frame
 from torch import nn
 import torch
 from torch_geometric.loader import DataLoader
+from torch_geometric.nn import summary
 from tqdm.auto import trange
 
 
@@ -12,17 +13,21 @@ class Trainer:
     def __init__(
         self,
         model: nn.Module,
+        num_epochs:int= 50,
+        batch_size:int = 16,
         dataset_name: Literal["a", "b", "c"] = "a",
         dataset_part: int | None = 10_000,
         save_path: str | Path = "model.pth",
     ) -> None:
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
         self.dataset_part = dataset_part
         self.training_dataset = self.prepare_dataset(load_data(dataset_name, "train"))
         self.validation_dataset = self.prepare_dataset(load_data(dataset_name, "val"))
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu" if torch.cuda.is_available() else "cpu"
 
         self.model = model.to(self.device)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
         self.criterion = torch.nn.CrossEntropyLoss()
 
         self.save_path = save_path
@@ -49,14 +54,16 @@ class Trainer:
             g.y = torch.tensor([row.label], dtype=torch.long)
             graphs.append(g)
 
-        loader = DataLoader(graphs, batch_size=16, shuffle=True)
+        loader = DataLoader(graphs, batch_size=self.batch_size, shuffle=True)
 
-        iterator = trange(50, desc="epoch 0 loss: <infinite> acc: 0%")
+        iterator = trange(self.num_epochs, desc="epoch 0 loss: <infinite> acc: 0%")
         for epoch in iterator:
             total_loss = 0
             self.model.train()
 
-            for batch in loader:
+            for i, batch in enumerate(loader):
+                if epoch == 0 and i == 0:
+                    print(summary(self.model, batch.to(self.device)))
                 self.optimizer.zero_grad()
                 out = self.model(batch.to(self.device))
                 loss = self.criterion(out, batch.y)
