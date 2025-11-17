@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
 
 
-class GraphClassifier(nn.Module):
+class GraphV1EmbLarge(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -61,6 +61,9 @@ class GraphClassifier(nn.Module):
 
 if __name__ == "__main__":
     from src.train import Trainer
+    from pathlib import Path
 
-    trainer = Trainer(GraphClassifier(5, 2, 65536))
+    trainer = Trainer(
+        GraphV1EmbLarge(5, 2, 65536), save_path=Path("models", "GraphV1EmbLarge.pth")
+    )
     trainer.train()

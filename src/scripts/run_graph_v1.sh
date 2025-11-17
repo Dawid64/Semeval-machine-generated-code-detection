@@ -7,4 +7,5 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --comment="GNN-Semeval for Semantic Webs and Social Networks"
 
-uv run python -m src.models.graph_v1
+echo "Running model $1"
+uv run python -m src.models.$1
