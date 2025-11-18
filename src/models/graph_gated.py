@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GatedGraphConv, global_mean_pool
+from torch_geometric.nn import GatedGraphConv, SoftmaxAggregation
 
 class GraphClassifier(nn.Module):
     def __init__(
@@ -17,12 +17,9 @@ class GraphClassifier(nn.Module):
 
         self.node_type_embedding = nn.Embedding(num_node_types, embed_dim)
 
-        in_gnn = embed_dim + in_channels - 1
-
-        self.c1 = GatedGraphConv(2048, 1)
-        self.c2 = GatedGraphConv(1024, 1)
-        self.h1 = nn.Linear(1024, 1024)
-        self.h2 = nn.Linear(1024, 512)
+        self.c1 = GatedGraphConv(1024, 2)
+        self.aggr = SoftmaxAggregation(learn=True)
+        self.h1 = nn.Linear(1024, 512)
         self.o = nn.Linear(512, num_classes)
         self.dropout = 0.1
 
@@ -42,15 +39,12 @@ class GraphClassifier(nn.Module):
         x = torch.cat([type_emb, other_feats], dim=-1)
 
         x = self.c1(x, edge_index)
-        x = F.relu(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
-
-        x = self.c2(x, edge_index)
         x = F.relu(x)
 
-        x = global_mean_pool(x, batch)
+        x = self.aggr(x, batch)
         x = F.relu(self.h1(x))
-        x = F.relu(self.h2(x))
+        x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.o(x)
         return x
     
