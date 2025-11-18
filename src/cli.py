@@ -21,7 +21,7 @@ def train(
         dataset (Literal[&quot;a&quot;, &quot;b&quot;, &quot;c&quot;], optional): name of dataset. Defaults to "a".
         dataset_size (None | int, optional): Number of samples that will be taken into dataset, if None it takes whole dataset. Defaults to None.
     """
-    model = __all_models__[name]
+    model = __all_models__[name](dataset)
     trainer = Trainer(
         model, dataset_name=dataset, dataset_part=dataset_size, save_path=save
     )
@@ -47,7 +47,7 @@ def check(
     with open(model_path, "rb") as file:
         state_dict = torch.load(file, "cpu")
     code_tree = create_graph(code, language)
-    model = __all_models__[name]
+    model = __all_models__[name]()
     model.load_state_dict(state_dict)
     output = model(code_tree)
     print(output)
