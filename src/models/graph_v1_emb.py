@@ -56,12 +56,14 @@ class GraphClassifier(nn.Module):
         x = F.relu(self.h2(x))
         x = self.o(x)
         if self.num_classes > 2:
-            x = nn.Softmax()(x)
+            x = nn.Softmax(dim=-1)(x)
+        else:
+            x = nn.Sigmoid()(x)
         return x
 
 
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphClassifier(5, 2, 65536), num_classes=2, early_stopping_patience=10)
+    trainer = Trainer(GraphClassifier(5, 11, 65536),dataset_name="b", batch_size=32, num_classes=11, early_stopping_patience=10, weight_classes=True)
     trainer.train()

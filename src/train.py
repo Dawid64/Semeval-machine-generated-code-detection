@@ -22,7 +22,9 @@ class Trainer:
         save_path: str | Path = "model.pth",
         num_classes: int = 2,
         early_stopping_patience: int | None = None,
+        weight_classes: bool = False,
     ) -> None:
+        torch.set_float32_matmul_precision = "medium"
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.dataset_part = dataset_part
@@ -34,7 +36,13 @@ class Trainer:
 
         self.model = model.to(self.device)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
-        self.criterion = torch.nn.CrossEntropyLoss() if self.num_classes > 2 else torch.nn.BCEWithLogitsLoss()
+        if weight_classes:
+            label_counts = load_data(dataset_name, "train").label.value_counts().sort_index().to_numpy()
+            weights = label_counts.sum() / (label_counts.__len__() * label_counts)
+            weights = torch.tensor(weights).to(self.device, dtype=torch.float)
+        else:
+            weights = None
+        self.criterion = torch.nn.CrossEntropyLoss(weight=weights) if self.num_classes > 2 else torch.nn.BCELoss(weight=weights)
 
         self.save_path = save_path
 
@@ -66,17 +74,17 @@ class Trainer:
         for epoch in iterator:
             train_loss = self.train_loop(epoch)
             val_loss = self.val_loop()
-            if val_loss<lowest_loss:
+            if val_loss < lowest_loss:
                 lowest_loss = val_loss
                 non_improvement_counter = 0
             else:
-                non_improvement_counter +=1
+                non_improvement_counter += 1
                 if self.early_stopping_patience is not None and non_improvement_counter >= self.early_stopping_patience:
                     print(f"Training early stopped. Lowest validation loss was {lowest_loss}")
                     break
-            
+
             acc = self.acc.compute()
-            auc = self.acc.compute()
+            auc = self.auc.compute()
             iterator.set_description(
                 f"epoch {epoch + 1} train loss: {train_loss:.4g} val loss: {val_loss:.4g} acc: {acc * 100:.4g}% auc: {auc:.4g}"
             )
@@ -94,7 +102,8 @@ class Trainer:
             out = self.model(batch.to(self.device))
             if self.num_classes == 2:
                 out = out.squeeze()
-            loss = self.criterion(out, batch.y.float())
+            target = batch.y if self.num_classes > 2 else batch.y.float()
+            loss = self.criterion(out, target)
             loss.backward()
             self.optimizer.step()
             losses.append(loss.item())
@@ -108,7 +117,8 @@ class Trainer:
                 out = self.model(batch.to(self.device))
                 if self.num_classes == 2:
                     out = out.squeeze()
-                loss = self.criterion(out, batch.y.float())
+                target = batch.y if self.num_classes > 2 else batch.y.float()
+                loss = self.criterion(out, target)
                 self.acc(out, batch.y)
                 self.auc(out, batch.y)
                 losses.append(loss.item())

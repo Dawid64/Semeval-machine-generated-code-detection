@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GatedGraphConv, MeanAggregation
 
+
 class GraphClassifier(nn.Module):
     def __init__(
         self,
@@ -19,7 +20,7 @@ class GraphClassifier(nn.Module):
         self.node_type_embedding = nn.Embedding(num_node_types, embed_dim)
 
         self.c1 = GatedGraphConv(1024, 1)
-        self.c2 = GatedGraphConv(1024,1)
+        self.c2 = GatedGraphConv(1024, 1)
         self.aggr = MeanAggregation()
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 512)
@@ -54,11 +55,14 @@ class GraphClassifier(nn.Module):
         x = F.relu(self.h2(x))
         x = self.o(x)
         if self.num_classes > 2:
-            x = nn.Softmax()(x)
+            x = nn.Softmax(dim=-1)(x)
+        else:
+            x = nn.Sigmoid()(x)
         return x
-    
+
+
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphClassifier(5, 2, 65536), num_classes=2, early_stopping_patience=10)
+    trainer = Trainer(GraphClassifier(5, 2, 65536), batch_size=32, num_classes=2, early_stopping_patience=10)
     trainer.train()
