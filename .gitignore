@@ -13,4 +13,8 @@ wheels/
 # Project
 data
 
+# sbatch logs
 logs
+
+# Trained models
+*.pth

@@ -63,5 +63,5 @@ class GraphClassifier(nn.Module):
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphClassifier(5, 2, 65536))
+    trainer = Trainer(GraphClassifier(5, 2, 65536), num_classes=2, early_stopping_patience=10)
     trainer.train()
