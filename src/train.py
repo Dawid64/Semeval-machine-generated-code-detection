@@ -47,7 +47,7 @@ class Trainer:
             if self.classification == 'mutli_class':
                 pred = torch.argmax(self.model(row.code_tree.to(self.device)))
             else:
-                pred = torch.round(torch.sigmoid(self.model(row.code_tree.to)))
+                pred = torch.round(torch.sigmoid(self.model(row.code_tree.to(self.device))))
             if pred == row.label:
                 hits += 1
         return hits / num_samples
@@ -71,7 +71,9 @@ class Trainer:
                     print(summary(self.model, batch.to(self.device)))
                 self.optimizer.zero_grad()
                 out = self.model(batch.to(self.device))
-                loss = self.criterion(out, batch.y)
+                if self.classification == "binary":
+                    out = out.squeeze()
+                loss = self.criterion(out, batch.y.float())
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()

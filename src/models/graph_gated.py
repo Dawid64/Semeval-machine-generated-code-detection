@@ -14,13 +14,15 @@ class GraphClassifier(nn.Module):
         super().__init__()
 
         self.embed_dim = embed_dim
+        self.num_classes = num_classes
 
         self.node_type_embedding = nn.Embedding(num_node_types, embed_dim)
 
         self.c1 = GatedGraphConv(1024, 2)
         self.aggr = SoftmaxAggregation(learn=True)
         self.h1 = nn.Linear(1024, 512)
-        self.o = nn.Linear(512, num_classes)
+        num_outputs = self.num_classes if self.num_classes > 2 else 1
+        self.o = nn.Linear(512, num_outputs)
         self.dropout = 0.1
 
     def forward(self, data):
@@ -46,6 +48,8 @@ class GraphClassifier(nn.Module):
         x = F.relu(self.h1(x))
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.o(x)
+        if self.num_classes > 2:
+            x = nn.Softmax()(x)
         return x
     
 if __name__ == "__main__":
