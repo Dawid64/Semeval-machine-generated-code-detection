@@ -5,16 +5,12 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 
 
 class GraphV1Emb(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        num_classes: int,
-        num_node_types: int,
-        embed_dim: int = 32,
-    ):
+    def __init__(self):
         super().__init__()
 
-        self.embed_dim = embed_dim
+        num_node_types = 65536
+        embed_dim = 32
+        in_channels = 5
 
         self.node_type_embedding = nn.Embedding(num_node_types, embed_dim)
 
@@ -24,7 +20,7 @@ class GraphV1Emb(nn.Module):
         self.c2 = GCNConv(2048, 1024)
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 512)
-        self.o = nn.Linear(512, num_classes)
+        self.o = nn.Linear(512, 2)
         self.dropout = 0.1
 
     def forward(self, data):
@@ -59,5 +55,5 @@ class GraphV1Emb(nn.Module):
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphV1Emb(5, 2, 65536))
+    trainer = Trainer(GraphV1Emb())
     trainer.train()

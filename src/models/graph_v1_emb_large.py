@@ -5,13 +5,11 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 
 
 class GraphV1EmbLarge(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        num_classes: int,
-        num_node_types: int,
-    ):
+    def __init__(self):
         super().__init__()
+
+        num_node_types = 2**16
+        in_channels = 5
 
         self.node_type_embedding = nn.Embedding(num_node_types, 128)
 
@@ -23,7 +21,7 @@ class GraphV1EmbLarge(nn.Module):
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 1024)
         self.h3 = nn.Linear(1024, 512)
-        self.o = nn.Linear(512, num_classes)
+        self.o = nn.Linear(512, 2)
         self.dropout = 0.1
 
     def forward(self, data):
@@ -64,6 +62,6 @@ if __name__ == "__main__":
     from pathlib import Path
 
     trainer = Trainer(
-        GraphV1EmbLarge(5, 2, 65536), save_path=Path("models", "GraphV1EmbLarge.pth")
+        GraphV1EmbLarge(), save_path=Path("models", "GraphV1EmbLarge.pth")
     )
     trainer.train()

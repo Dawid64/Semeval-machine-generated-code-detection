@@ -5,13 +5,13 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 
 
 class GraphClassifier(nn.Module):
-    def __init__(self, in_channels: int, num_classes: int):
+    def __init__(self):
         super().__init__()
-        self.c1 = GCNConv(in_channels, 2048)
+        self.c1 = GCNConv(5, 2048)
         self.c2 = GCNConv(2048, 1024)
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 512)
-        self.o = nn.Linear(512, num_classes)
+        self.o = nn.Linear(512, 2)
         self.dropout = 0.1
 
     def forward(self, data):
@@ -39,5 +39,5 @@ class GraphClassifier(nn.Module):
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphClassifier(5, 2))
+    trainer = Trainer(GraphClassifier())
     trainer.train()

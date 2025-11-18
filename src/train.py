@@ -36,6 +36,8 @@ class Trainer:
 
     def get_acc(self, num_samples: int = 1000):
         hits = 0
+        if len(self.validation_dataset) < 1000:
+            num_samples = len(self.validation_dataset) // 10
         for _, row in self.validation_dataset.sample(num_samples).iterrows():
             pred = torch.argmax(self.model(row.code_tree.to(self.device)))
             if pred == row.label:
@@ -67,10 +69,3 @@ class Trainer:
                 f"epoch {epoch + 1} loss: {total_loss:.1f} acc: {self.get_acc() * 100:.1f}%"
             )
             torch.save(self.model.state_dict(), self.save_path)
-
-
-if __name__ == "__main__":
-    from src.models.graph_v1 import GraphClassifier
-
-    trainer = Trainer(GraphClassifier(5, 2))
-    trainer.train()

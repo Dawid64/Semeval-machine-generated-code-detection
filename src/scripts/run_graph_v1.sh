@@ -8,4 +8,4 @@
 #SBATCH --comment="GNN-Semeval for Semantic Webs and Social Networks"
 
 echo "Running model $1"
-uv run python -m src.models.$1
+uv run semeval train $1
