@@ -1,11 +1,15 @@
 from pathlib import Path
 from typing import Literal
+import warnings
+
 import pandas as pd
-from src.data_processing import load_data, parse_data_frame
-from torch import nn
+from tqdm.rich import trange
+
 import torch
+from torch import nn
 from torch_geometric.loader import DataLoader
-from tqdm.auto import trange
+
+from src.data_processing import load_data, parse_data_frame
 
 
 class Trainer:
@@ -53,7 +57,10 @@ class Trainer:
 
         loader = DataLoader(graphs, batch_size=16, shuffle=True)
 
-        iterator = trange(50, desc="epoch 0 loss: <infinite> acc: 0%")
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="rich is experimental/alpha")
+            iterator = trange(50, desc="epoch 0 loss: <infinite> acc: 0%")
+
         for epoch in iterator:
             total_loss = 0
             self.model.train()
