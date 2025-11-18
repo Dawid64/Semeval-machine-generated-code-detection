@@ -57,8 +57,6 @@ class GraphClassifier(nn.Module):
         x = self.o(x)
         if self.num_classes > 2:
             x = nn.Softmax(dim=-1)(x)
-        else:
-            x = nn.Sigmoid()(x)
         return x
 
 

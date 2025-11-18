@@ -24,7 +24,6 @@ class Trainer:
         early_stopping_patience: int | None = None,
         weight_classes: bool = False,
     ) -> None:
-        torch.set_float32_matmul_precision = "medium"
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.dataset_part = dataset_part
@@ -33,16 +32,20 @@ class Trainer:
         self.training_dataset = self.prepare_dataset(load_data(dataset_name, "train"))
         self.validation_dataset = self.prepare_dataset(load_data(dataset_name, "val"))
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
+        if self.device == "cuda":
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
         self.model = model.to(self.device)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
         if weight_classes:
             label_counts = load_data(dataset_name, "train").label.value_counts().sort_index().to_numpy()
             weights = label_counts.sum() / (label_counts.__len__() * label_counts)
             weights = torch.tensor(weights).to(self.device, dtype=torch.float)
+            if self.num_classes == 2:
+                weights = weights[1]/weights[0]
         else:
             weights = None
-        self.criterion = torch.nn.CrossEntropyLoss(weight=weights) if self.num_classes > 2 else torch.nn.BCELoss(weight=weights)
+        self.criterion = torch.nn.CrossEntropyLoss(weight=weights) if self.num_classes > 2 else torch.nn.BCEWithLogitsLoss(pos_weight=weights)
 
         self.save_path = save_path
 
@@ -117,10 +120,13 @@ class Trainer:
                 out = self.model(batch.to(self.device))
                 if self.num_classes == 2:
                     out = out.squeeze()
+                    out_metric = torch.nn.functional.sigmoid(out)
+                else:
+                    out_metric = out
                 target = batch.y if self.num_classes > 2 else batch.y.float()
                 loss = self.criterion(out, target)
-                self.acc(out, batch.y)
-                self.auc(out, batch.y)
+                self.acc(out_metric, batch.y)
+                self.auc(out_metric, batch.y)
                 losses.append(loss.item())
         return sum(losses) / len(losses)
 
