@@ -15,6 +15,7 @@ class GraphClassifier(nn.Module):
         super().__init__()
 
         self.embed_dim = embed_dim
+        self.num_classes = num_classes
 
         self.node_type_embedding = nn.Embedding(num_node_types, embed_dim)
 
@@ -24,7 +25,8 @@ class GraphClassifier(nn.Module):
         self.c2 = GCNConv(2048, 1024)
         self.h1 = nn.Linear(1024, 1024)
         self.h2 = nn.Linear(1024, 512)
-        self.o = nn.Linear(512, num_classes)
+        num_outputs = self.num_classes if self.num_classes > 2 else 1
+        self.o = nn.Linear(512, num_outputs)
         self.dropout = 0.1
 
     def forward(self, data):
@@ -53,6 +55,8 @@ class GraphClassifier(nn.Module):
         x = F.relu(self.h1(x))
         x = F.relu(self.h2(x))
         x = self.o(x)
+        if self.num_classes > 2:
+            x = nn.Softmax()(x)
         return x
 
 

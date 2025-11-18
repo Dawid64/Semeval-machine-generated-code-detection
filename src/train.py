@@ -18,6 +18,7 @@ class Trainer:
         dataset_name: Literal["a", "b", "c"] = "a",
         dataset_part: int | None = 10_000,
         save_path: str | Path = "model.pth",
+        classification:Literal['binary','multi_class'] ='binary',
     ) -> None:
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -28,7 +29,8 @@ class Trainer:
 
         self.model = model.to(self.device)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.classification = classification
+        self.criterion = torch.nn.CrossEntropyLoss() if self.classification=='multi_class' else torch.nn.BCEWithLogitsLoss()
 
         self.save_path = save_path
 
@@ -42,7 +44,10 @@ class Trainer:
     def get_acc(self, num_samples: int = 1000):
         hits = 0
         for _, row in self.validation_dataset.sample(num_samples).iterrows():
-            pred = torch.argmax(self.model(row.code_tree.to(self.device)))
+            if self.classification == 'mutli_class':
+                pred = torch.argmax(self.model(row.code_tree.to(self.device)))
+            else:
+                pred = torch.round(torch.sigmoid(self.model(row.code_tree.to)))
             if pred == row.label:
                 hits += 1
         return hits / num_samples
