@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "click>=8.3.1",
     "ipykernel>=7.1.0",
     "kagglehub>=0.3.13",
     "matplotlib>=3.10.7",
@@ -25,3 +26,13 @@ dependencies = [
     "tree-sitter-php>=0.24.1",
     "tree-sitter-python>=0.25.0",
 ]
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[project.scripts]
+semeval = "src.cli:cli"

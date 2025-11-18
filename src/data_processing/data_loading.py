@@ -8,6 +8,7 @@ import pandas as pd
 
 def download():
     if Path("data", "SemEval-2026-Task13").exists():
+        print("Dataset is already downloaded")
         return
     path = kagglehub.dataset_download("daniilor/semeval-2026-task13")
     print("Path to dataset files:", path)

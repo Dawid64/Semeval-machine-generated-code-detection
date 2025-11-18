@@ -9,5 +9,5 @@ git clone --recurse-submodules https://github.com/Dawid64/Semeval-machine-genera
 cd Semeval-machine-generated-code-detection
 
 uv sync
-uv run python src/data_processing/data_loading.py
+uv run semeval download
 ```
