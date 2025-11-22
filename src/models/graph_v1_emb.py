@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
 
 
-class GraphClassifier(nn.Module):
+class GraphV1Emb(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -65,13 +65,13 @@ if __name__ == "__main__":
 
     metrics = ["acc", "prec", "recall", "F1", "auc"]
     trainer = Trainer(
-        GraphClassifier(5, 11, 65536),
+        GraphV1Emb(5, 11, 65536),
         dataset_name="b",
         batch_size=32,
         num_classes=11,
         metrics=metrics,
         early_stopping_patience=10,
         weight_classes=False,
-        logfile="logs/training.log"
+        logfile="logs/training.log",
     )
     trainer.train()
