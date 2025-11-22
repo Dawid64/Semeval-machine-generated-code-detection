@@ -1,3 +1,5 @@
+from pathlib import Path
+from typing import Literal
 import pandas as pd
 from src.data_processing import load_data, parse_data_frame
 from torch import nn
@@ -7,16 +9,27 @@ from tqdm.auto import trange
 
 
 class Trainer:
-    def __init__(self, model: nn.Module) -> None:
-        self.training_dataset = self.prepare_dataset(load_data("a", "train"))
-        self.validation_dataset = self.prepare_dataset(load_data("a", "val"))
+    def __init__(
+        self,
+        model: nn.Module,
+        dataset_name: Literal["a", "b", "c"] = "a",
+        dataset_part: int | None = 10_000,
+        save_path: str | Path = "model.pth",
+    ) -> None:
+        self.dataset_part = dataset_part
+        self.training_dataset = self.prepare_dataset(load_data(dataset_name, "train"))
+        self.validation_dataset = self.prepare_dataset(load_data(dataset_name, "val"))
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.model = model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
         self.criterion = torch.nn.CrossEntropyLoss()
 
+        self.save_path = save_path
+
     def prepare_dataset(self, dataset: pd.DataFrame) -> pd.DataFrame:
+        if self.dataset_part is not None:
+            dataset = dataset.sample(self.dataset_part)
         dataset["code_tree"] = parse_data_frame(dataset)
         dataset.drop(["code", "language"], axis=1)
         return dataset
@@ -45,7 +58,7 @@ class Trainer:
 
             for batch in loader:
                 self.optimizer.zero_grad()
-                out = self.model(batch.to("cuda"))
+                out = self.model(batch.to(self.device))
                 loss = self.criterion(out, batch.y)
                 loss.backward()
                 self.optimizer.step()
@@ -53,7 +66,7 @@ class Trainer:
             iterator.set_description(
                 f"epoch {epoch + 1} loss: {total_loss:.1f} acc: {self.get_acc() * 100:.1f}%"
             )
-            torch.save(self.model.state_dict(), "model.pth")
+            torch.save(self.model.state_dict(), self.save_path)
 
 
 if __name__ == "__main__":

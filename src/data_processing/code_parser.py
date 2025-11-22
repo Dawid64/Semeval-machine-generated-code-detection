@@ -103,7 +103,7 @@ def create_graph(code: str, language: SUPPORTED_LANGUAGES) -> Data:
     return Data(
         x=torch.stack(
             [
-                torch.tensor(info["type_id"], dtype=torch.float32),
+                torch.tensor(info["type_id"], dtype=torch.int32),
                 torch.tensor(info["depth"], dtype=torch.float32),
                 torch.tensor(info["num_children"], dtype=torch.float32),
                 torch.tensor(info["is_named"], dtype=torch.float32),
