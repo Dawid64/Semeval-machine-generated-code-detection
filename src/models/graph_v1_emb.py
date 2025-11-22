@@ -63,5 +63,15 @@ class GraphClassifier(nn.Module):
 if __name__ == "__main__":
     from src.train import Trainer
 
-    trainer = Trainer(GraphClassifier(5, 11, 65536),dataset_name="b", batch_size=32, num_classes=11, early_stopping_patience=10, weight_classes=True)
+    metrics = ["acc", "prec", "recall", "F1", "auc"]
+    trainer = Trainer(
+        GraphClassifier(5, 11, 65536),
+        dataset_name="b",
+        batch_size=32,
+        num_classes=11,
+        metrics=metrics,
+        early_stopping_patience=10,
+        weight_classes=False,
+        logfile="logs/training.log"
+    )
     trainer.train()

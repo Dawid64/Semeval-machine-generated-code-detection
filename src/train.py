@@ -8,7 +8,8 @@ import torch
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import summary
 from tqdm.auto import trange
-from torchmetrics.classification import Accuracy, AUROC
+from torchmetrics.classification import Accuracy, AUROC, Precision, Recall, F1Score
+import logging
 
 
 class Trainer:
@@ -21,8 +22,10 @@ class Trainer:
         dataset_part: int | None = 10_000,
         save_path: str | Path = "model.pth",
         num_classes: int = 2,
+        metrics: list[str] = ["acc", "F1"],
         early_stopping_patience: int | None = None,
         weight_classes: bool = False,
+        logfile: str | None = None,
     ) -> None:
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -42,18 +45,54 @@ class Trainer:
             weights = label_counts.sum() / (label_counts.__len__() * label_counts)
             weights = torch.tensor(weights).to(self.device, dtype=torch.float)
             if self.num_classes == 2:
-                weights = weights[1]/weights[0]
+                weights = weights[1] / weights[0]
         else:
             weights = None
-        self.criterion = torch.nn.CrossEntropyLoss(weight=weights) if self.num_classes > 2 else torch.nn.BCEWithLogitsLoss(pos_weight=weights)
+        self.criterion = (
+            torch.nn.CrossEntropyLoss(weight=weights) if self.num_classes > 2 else torch.nn.BCEWithLogitsLoss(pos_weight=weights)
+        )
 
         self.save_path = save_path
 
         self.train_loader = self.create_loader(self.training_dataset, True)
         self.val_loader = self.create_loader(self.validation_dataset, False)
 
-        self.acc = Accuracy(task="multiclass" if self.num_classes > 2 else "binary", num_classes=self.num_classes).to(self.device)
-        self.auc = AUROC(task="multiclass" if self.num_classes > 2 else "binary", num_classes=self.num_classes).to(self.device)
+        self.metrics = {name: self.init_metric(name) for name in metrics}
+        if logfile is not None:
+            logging.basicConfig(
+                filename=logfile,
+                filemode="w",
+                encoding="utf-8",
+                format="{asctime} - {levelname} - {message}",
+                style="{",
+                datefmt="%Y-%m-%d %H:%M",
+                level=logging.INFO,
+            )
+
+    def init_metric(self, metric_name: str):
+        match metric_name.lower():
+            case "acc":
+                return Accuracy(task="multiclass" if self.num_classes > 2 else "binary", average="micro", num_classes=self.num_classes).to(
+                    self.device
+                )
+            case "prec":
+                return Precision(task="multiclass" if self.num_classes > 2 else "binary", average="macro", num_classes=self.num_classes).to(
+                    self.device
+                )
+            case "recall":
+                return Recall(task="multiclass" if self.num_classes > 2 else "binary", average="macro", num_classes=self.num_classes).to(
+                    self.device
+                )
+            case "f1":
+                return F1Score(task="multiclass" if self.num_classes > 2 else "binary", average="macro", num_classes=self.num_classes).to(
+                    self.device
+                )
+            case "auc":
+                return AUROC(task="multiclass" if self.num_classes > 2 else "binary", average="macro", num_classes=self.num_classes).to(
+                    self.device
+                )
+            case _:
+                raise ValueError("metric not supported")
 
     def create_loader(self, dataset, shuffle):
         graphs = []
@@ -71,12 +110,20 @@ class Trainer:
         return dataset
 
     def train(self):
+        print(summary(self.model, next(iter(self.train_loader)).to(self.device)))
         iterator = trange(self.num_epochs, desc="epoch 0 loss: <infinite> acc: 0%")
         lowest_loss = np.inf
         non_improvement_counter = 0
         for epoch in iterator:
-            train_loss = self.train_loop(epoch)
+            train_loss = self.train_loop()
             val_loss = self.val_loop()
+            desc_str = f"epoch {epoch + 1} {train_loss=:.4g} {val_loss=:.4g}"
+            for name, metric in self.metrics.items():
+                desc_str += f" {name}={metric.compute():.4g}"
+            iterator.set_description(desc=desc_str)
+            logging.info(desc_str)
+            for metric in self.metrics.values():
+                metric.reset()
             if val_loss < lowest_loss:
                 lowest_loss = val_loss
                 non_improvement_counter = 0
@@ -85,22 +132,12 @@ class Trainer:
                 if self.early_stopping_patience is not None and non_improvement_counter >= self.early_stopping_patience:
                     print(f"Training early stopped. Lowest validation loss was {lowest_loss}")
                     break
-
-            acc = self.acc.compute()
-            auc = self.auc.compute()
-            iterator.set_description(
-                f"epoch {epoch + 1} train loss: {train_loss:.4g} val loss: {val_loss:.4g} acc: {acc * 100:.4g}% auc: {auc:.4g}"
-            )
-            self.acc.reset()
-            self.auc.reset()
             torch.save(self.model.state_dict(), self.save_path)
 
-    def train_loop(self, epoch):
+    def train_loop(self):
         losses = []
         self.model.train()
-        for i, batch in enumerate(self.train_loader):
-            if epoch == 0 and i == 0:
-                print(summary(self.model, batch.to(self.device)))
+        for batch in self.train_loader:
             self.optimizer.zero_grad()
             out = self.model(batch.to(self.device))
             if self.num_classes == 2:
@@ -125,8 +162,8 @@ class Trainer:
                     out_metric = out
                 target = batch.y if self.num_classes > 2 else batch.y.float()
                 loss = self.criterion(out, target)
-                self.acc(out_metric, batch.y)
-                self.auc(out_metric, batch.y)
+                for metric in self.metrics.values():
+                    metric(out_metric, batch.y)
                 losses.append(loss.item())
         return sum(losses) / len(losses)
 
